@@ -2,13 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 触点类（可固定点）
+/// 该类只关心可否固定不关心电路
+/// </summary>
 public class JointFixation : MonoBehaviour ,IFixation
 {
     public int groupIndex = 0;
     [SerializeField]
     private Transform center;
 
-    WireEditable wire;
+    WireEditable wire;//
     IFixation mainFixation;
 
     public string Name => gameObject.name;
