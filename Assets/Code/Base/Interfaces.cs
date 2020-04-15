@@ -7,6 +7,7 @@ using UnityEngine;
 /// </summary>
 public interface IElectricComponent
 {
+    //生命值,电器烧毁需要过热并烧毁过程，该值也可以认为是耐热程度
     float HealthPoint { get; set; }
     
   //  /// <summary>
