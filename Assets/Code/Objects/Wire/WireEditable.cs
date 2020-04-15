@@ -411,15 +411,8 @@ public class WireEditable : Wire, IGrabable ,IFixation
                 {
                     info.Node.localEulerAngles = Vector3.zero;
                 }
-
-
                 i++;
             }
-
-            
-
-
-
         }
        
     }
@@ -495,23 +488,61 @@ public class WireEditable : Wire, IGrabable ,IFixation
 
             if(toNodeIndex - fromNodeIndex > 1)
             {
-                Vector3 startPos = points[fromNodeIndex + 1].position;
-                Vector3 endOld = points[toNodeIndex].position;
+                int startNode = fromNodeIndex + 1;
+
+                Vector3 startPos = points[startNode].position;
                 Vector3 endNew = GetNodeSyncPosition(to);
-
-                Vector3 offset_Old = endOld - startPos;
+                Vector3 endOld = points[toNodeIndex].position;
                 Vector3 offset_New = endNew - startPos;
-
-                float maxDis = nodeMeterOnWire[points[toNodeIndex]] - nodeMeterOnWire[points[fromNodeIndex + 1]];
+                Vector3 offset_Old = endOld - startPos;
                 
                 
 
-                //判断距离
-            
-                //Vector3.ProjectOnPlane
+                float maxDis = nodeMeterOnWire[points[toNodeIndex]] - nodeMeterOnWire[points[startNode]];
 
-                //points[toNodeIndex - 1].LookAt(endNew);
-                //points[toNodeIndex - 1].localRotation = LimitQuaternion(points[toNodeIndex - 1].localRotation);
+                //进行整体的旋转
+                Quaternion rot = Quaternion.FromToRotation(offset_Old, offset_New);
+                points[startNode].rotation = rot * points[startNode].rotation;
+                if (offset_New.magnitude < offset_Old.magnitude)
+                {
+                    Quaternion r = Quaternion.Lerp(Quaternion.Euler(0, 0, 0), rot, 0.1f);
+                    for (int i = 0; i < toNodeIndex - startNode; i++)
+                    {
+                        int index = i + startNode;
+                        float angle = Vector3.Angle(points[index].forward, offset_Old);
+                        if (angle > 0.1f || 180f - angle <= 0.1f)
+                        {
+                            points[index].rotation = r * points[index].rotation;
+                        }
+                    }
+                }
+
+                float scale = offset_New.magnitude / offset_Old.magnitude;
+
+                List<Vector3> positions = new List<Vector3>();
+                for (int i = 0; i < toNodeIndex - startNode; i++)
+                {
+                    int index = i + startNode;
+
+                    Vector3 dir = points[index + 1].position - points[index].position;
+
+                    Vector3 dirN = dir.normalized;
+
+                    Vector3 p = Vector3.Project(dirN, offset_New.normalized);
+                    Vector3 pp = Vector3.ProjectOnPlane(dirN, offset_New.normalized);
+                    //在投影上的新长度
+                    //a b c 对边临边斜边
+                    float b = p.magnitude * scale;
+                    float a = Mathf.Sqrt(1 - b * b);
+
+                    positions.Add((pp.normalized * a + p.normalized * b).normalized * dir.magnitude);
+                }
+
+                for (int i = 0; i < toNodeIndex - startNode; i++)
+                {
+                    int index = i + startNode;
+                    points[index].LookAt(points[index].position + positions[i]);
+                }
             }
 
             to.Node.rotation = Quaternion.LookRotation(
